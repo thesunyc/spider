@@ -3,6 +3,7 @@
 import sys
 import threading
 import requests
+import redis
 sys.path.append('E:\workspace\spider')
 from lxml import etree
 from music163.scanner.SongScanner import SongScanner
@@ -13,7 +14,8 @@ class PageScanner(BaseScanner):
     def __init__(self,redisConf,enableCache=False):
         self.songScanner = SongScanner(redisConf,enableCache)
         self.threadList = []
-        self.enableCache = enableCache
+        self.initCache('page',50,enableCache)
+        self.initRedis(redisConf)
     
     def start(self,*scanPageList):
         for page in scanPageList:
@@ -23,7 +25,7 @@ class PageScanner(BaseScanner):
             if not res or not res.text:
                 continue
             doc = etree.HTML(res.text)
-            if not doc:
+            if doc is None:
                 continue
             pageThread = threading.Thread(target=self.songScanner.scanSong,args=(doc,))
             self.threadList.append(pageThread)

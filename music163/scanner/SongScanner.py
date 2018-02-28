@@ -19,16 +19,15 @@ from music163.scanner.BaseScanner import BaseScanner
 
 class SongScanner(BaseScanner):
     def __init__(self,redisConf,enableCache=False):
-        self.redisClient = redis.Redis(redisConf)
+        self.initRedis(redisConf)
         self.headers = COMMON_HEADERS
         self.headers['Cookie'] = 'appver=1.5.0.75771;'
         self.headers['Referer'] = 'http://music.163.com/'
-        self.enableCache = enableCache
-        self.songBucketCount = 10000
+        self.initCache('song',1000,enableCache)
         self.initCommentRequestParam()
     
     def scanSong(self,doc):
-        if not doc:
+        if doc is None:
             return
         songLinks = doc.xpath('//a[starts-with(@href,"/song?id=")]')
         if not songLinks or len(songLinks)<=0:
@@ -71,7 +70,7 @@ class SongScanner(BaseScanner):
                 for comment in resJson['hotComments']:
                     comments.append(Comment(comment['commentId'],comment['user']['userId'],songId
                         ,comment['content'],comment['likedCount'],comment['time']))
-            self.saveItems("/music163/song.json",newSong)
+            self.saveItem("/music163/song.json",newSong)
             self.saveItems("/music163/comment.json",comments)
         except:
             traceback.print_exc()
